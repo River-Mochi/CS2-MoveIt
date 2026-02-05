@@ -1,11 +1,14 @@
-﻿using Colossal.IO.AssetDatabase;
+// File: Settings/Settings.cs
+// Purpose: Defines Move It settings shown in Options UI and binds input actions/keys.
+
+using Colossal.IO.AssetDatabase;
 using Game.Input;
 using Game.Modding;
 using Game.Settings;
 using MoveIt.Input;
 using MoveIt.Tool;
 using QCommonLib;
-using static Game.Prefabs.CompositionFlags;
+using static Game.Prefabs.CompositionFlags;     // appears not used
 
 namespace MoveIt.Settings
 {
@@ -35,16 +38,17 @@ namespace MoveIt.Settings
         public const string tabMain = "tabMain";
         public const string tabKeys = "tabKeys";
 
-        public const string groupGeneral    = "groupGeneral";
-        public const string groupHotkeys    = "groupHotkeys";
-        public const string groupMovement   = "groupMovement";
-        public const string groupToolbox    = "groupToolbox";
+        public const string groupGeneral = "groupGeneral";
+        public const string groupHotkeys = "groupHotkeys";
+        public const string groupMovement = "groupMovement";
+        public const string groupToolbox = "groupToolbox";
         public const string groupAbout = "groupAbout";
 
         public Settings(IMod mod) : base(mod)
         { }
 
-        // General options
+        // ---- General options ----
+
         [SettingsUISection(tabMain, groupGeneral)]
         public bool InvertRotation { get; set; } = false;
 
@@ -55,7 +59,12 @@ namespace MoveIt.Settings
             set
             {
                 _ExtraDebugLogging = value;
-                if (MoveItToolSystem.Log is not null) MoveItToolSystem.Log.IsDebug = value;
+
+                // Guard: logger can be null during early load/unload.
+                if (MoveItToolSystem.Log is not null)
+                {
+                    MoveItToolSystem.Log.IsDebug = value;
+                }
             }
         }
         private bool _ExtraDebugLogging = true;
@@ -104,13 +113,13 @@ namespace MoveIt.Settings
         [SettingsUIHidden]
         public bool HasShownMConflictPanel { get; set; } = false;
 
-        // Hotkeys
+        // ---- Hotkeys ----
         #region groupHotkeys
         [SettingsUIKeyboardBinding(BindingKeyboard.M, Inputs.KEY_TOGGLETOOL)]
         [SettingsUISection(tabKeys, groupHotkeys)]
         public ProxyBinding Key_ToggleTool { get; set; }
 
-        [SettingsUIKeyboardBinding(BindingKeyboard.M, Inputs.KEY_TOGGLEMARQUEE, ctrl:true)]
+        [SettingsUIKeyboardBinding(BindingKeyboard.M, Inputs.KEY_TOGGLEMARQUEE, ctrl: true)]
         [SettingsUISection(tabKeys, groupHotkeys)]
         public ProxyBinding Key_ToggleMarquee { get; set; }
 
@@ -201,7 +210,6 @@ namespace MoveIt.Settings
         [SettingsUIHidden]
         public ProxyBinding CancelMimic { get; set; }
         #endregion
-
 
         public override void SetDefaults()
         { }

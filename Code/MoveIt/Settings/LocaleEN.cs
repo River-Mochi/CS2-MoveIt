@@ -1,10 +1,12 @@
-﻿// <copyright>
+// <copyright>
 // Copyright (c) Yenyang. MIT License See LICENSE.txt
 // Forked with permission from Quboid's CS2-MoveIt project.
 // </copyright>
 
+// File: Code/MoveIt/Settings/LocaleEN.cs
+// Purpose: English fallback localization for Options UI, keybind UI, and in-game Move It UI text.
+
 using Colossal;
-using Colossal.IO.AssetDatabase.Internal;
 using MoveIt.Actions.Toolbox;
 using System.Collections.Generic;
 
@@ -27,13 +29,20 @@ namespace MoveIt.Settings
         {
             var strings = new Dictionary<string, string>
             {
+                // ---- Root / mod identity ----
                 { m_Settings.GetSettingsLocaleID(), Mod.MOD_NAME },
                 { m_Settings.GetBindingMapLocaleID(), Mod.MOD_NAME },
 
-                // General options
+                // ---- Settings UI: Tabs + Groups ----
                 { m_Settings.GetOptionTabLocaleID(Settings.tabMain), "Options" },
-                { m_Settings.GetOptionGroupLocaleID(Settings.groupGeneral), $"General Options | {Mod.MOD_NAME}" },
+                { m_Settings.GetOptionTabLocaleID(Settings.tabKeys), "Hotkeys" },
 
+                { m_Settings.GetOptionGroupLocaleID(Settings.groupGeneral), $"General Options | {Mod.MOD_NAME}" },
+                { m_Settings.GetOptionGroupLocaleID(Settings.groupHotkeys), $"Hotkeys Options | {Mod.MOD_NAME}" },
+                { m_Settings.GetOptionGroupLocaleID(Settings.groupMovement), "Movement" },
+                { m_Settings.GetOptionGroupLocaleID(Settings.groupToolbox), "Toolbox Tools" },
+
+                // ---- Settings UI: General options (tabMain/groupGeneral) ----
                 { m_Settings.GetOptionLabelLocaleID(nameof(Settings.InvertRotation)), "Invert Rotation" },
                 { m_Settings.GetOptionDescLocaleID(nameof(Settings.InvertRotation)), "Set rotation direction to vanilla CS2 relocate. If unticked, use CS1 Move It's direction." },
 
@@ -52,10 +61,7 @@ namespace MoveIt.Settings
                 { m_Settings.GetOptionLabelLocaleID(nameof(Settings.SaveLogsToDesktopBtn)), "Save Logs To Desktop" },
                 { m_Settings.GetOptionDescLocaleID(nameof(Settings.SaveLogsToDesktopBtn)), "Save a zip file to your desktop with logs for the game and mods for submitting with bug reports. Note: includes your Windows username, Steam ID, system specifications, and timezone." },
 
-                // Hotkeys
-                { m_Settings.GetOptionTabLocaleID(Settings.tabKeys), "Hotkeys" },
-                { m_Settings.GetOptionGroupLocaleID(Settings.groupHotkeys), $"Hotkeys Options | {Mod.MOD_NAME}" },
-
+                // ---- Settings UI: Keybind options (tabKeys) ----
                 { m_Settings.GetOptionLabelLocaleID(nameof(Settings.Key_ToggleTool)), "Open Move It" },
                 { m_Settings.GetOptionDescLocaleID(nameof(Settings.Key_ToggleTool)), "Enable or disable Move It" },
                 { m_Settings.GetBindingKeyLocaleID(nameof(Settings.Key_ToggleTool)), "\"Open Move It\"" },
@@ -84,8 +90,7 @@ namespace MoveIt.Settings
                 { m_Settings.GetOptionDescLocaleID(nameof(Settings.Key_FiltersToggle)), "Open or close the Filters foldout menu, enabling or disabling filters" },
                 { m_Settings.GetBindingKeyLocaleID(nameof(Settings.Key_FiltersToggle)), "\"Toggle Filters\"" },
 
-                { m_Settings.GetOptionGroupLocaleID(Settings.groupMovement), $"Movement" },
-
+                // ---- Settings UI: Movement keys (tabKeys/groupMovement) ----
                 { m_Settings.GetOptionLabelLocaleID(nameof(Settings.Key_MoveDown)), "Move Objects Down" },
                 { m_Settings.GetOptionDescLocaleID(nameof(Settings.Key_MoveDown)), "Move selected objects down. Each press is 1/8 of a metre. Shift+Press for 1m increments, or Control+Press for 1/64m increments." },
                 { m_Settings.GetBindingKeyLocaleID(nameof(Settings.Key_MoveDown)), "\"Move Down\"" },
@@ -102,21 +107,12 @@ namespace MoveIt.Settings
                 { m_Settings.GetOptionDescLocaleID(nameof(Settings.Key_MoveUp2)), "Move selected objects up. Each press is 1/8 of a metre. Shift+Press for 1m increments, or Control+Press for 1/64m increments." },
                 { m_Settings.GetBindingKeyLocaleID(nameof(Settings.Key_MoveUp2)), "\"Move Up Alternative\"" },
 
-                //{ m_Settings.GetOptionLabelLocaleID(nameof(Settings.Key_Dejank)), "Debug: Dejank Test" },
-                //{ m_Settings.GetOptionDescLocaleID(nameof(Settings.Key_Dejank)), "Ignore this, it's just here in case you need to rebind it." },
-                //{ m_Settings.GetBindingKeyLocaleID(nameof(Settings.Key_Dejank)), "\"Dejank Test\"" },
-
+                // ---- Settings UI: Debug keys (tabKeys/groupHotkeys) ----
                 { m_Settings.GetOptionLabelLocaleID(nameof(Settings.Key_DebugFreeze)), "Debug: Freeze Lines" },
                 { m_Settings.GetOptionDescLocaleID(nameof(Settings.Key_DebugFreeze)), "Ignore this, it's just here in case you need to rebind it." },
                 { m_Settings.GetBindingKeyLocaleID(nameof(Settings.Key_DebugFreeze)), "\"Freeze Lines\"" },
 
-                //{ m_Settings.GetOptionLabelLocaleID(nameof(Settings.Key_DebugClear)), "Debug: Clear Lines" },
-                //{ m_Settings.GetOptionDescLocaleID(nameof(Settings.Key_DebugClear)), "Ignore this, it's just here in case you need to rebind it." },
-                //{ m_Settings.GetBindingKeyLocaleID(nameof(Settings.Key_DebugClear)), "\"Clear Lines\"" },
-
-
-                { m_Settings.GetOptionGroupLocaleID(Settings.groupToolbox), $"Toolbox Tools" },
-
+                // ---- Settings UI: Toolbox keys (tabKeys/groupToolbox) ----
                 { m_Settings.GetOptionLabelLocaleID(nameof(Settings.Key_TB_TerrainHeight)), "Align To Terrain Height" },
                 { m_Settings.GetOptionDescLocaleID(nameof(Settings.Key_TB_TerrainHeight)), "Move selected objects to the terrain height. Does not work with buildings or on-ground networks." },
                 { m_Settings.GetBindingKeyLocaleID(nameof(Settings.Key_TB_TerrainHeight)), "\"Terrain Height\"" },
@@ -133,9 +129,11 @@ namespace MoveIt.Settings
                 { m_Settings.GetOptionDescLocaleID(nameof(Settings.Key_TB_ObjAngleIndiv)), "Turn selected objects to face the same angle as the next clicked object. This tool rotates all selected objects in place." },
                 { m_Settings.GetBindingKeyLocaleID(nameof(Settings.Key_TB_ObjAngleIndiv)), "\"Angle (Individual)\"" },
 
+                // ---- About group ----
                 { m_Settings.GetOptionLabelLocaleID(nameof(Settings.Version)), "Version" },
                 { m_Settings.GetOptionDescLocaleID(nameof(Settings.Version)), $"Version number for the {Mod.MOD_NAME} mod installed." },
 
+                // ---- Move It in-game UI text + tooltips (non-settings UI) ----
                 { SectionLabel("UseMKey"), "Move It - Use 'M' Key?" },
                 { TooltipDescriptionKey("YesUseMKey"), "Yes, Move It will use 'M'" },
                 { TooltipDescriptionKey("NoUseMKey"), "No, Move It will use 'Shift + M'" },
@@ -144,44 +142,60 @@ namespace MoveIt.Settings
 
                 { TooltipTitleKey("Undo"), "Undo" },
                 { TooltipDescriptionKey("Undo"), "Undoes the last Move It Action." },
+
                 { TooltipTitleKey(kSingle), "Single Mode" },
                 { TooltipDescriptionKey(kSingle), "Select Moveables one at a time." },
+
                 { TooltipTitleKey(kMarquee), "Marquee Mode" },
                 { TooltipDescriptionKey(kMarquee), "Select Moveables by drawing a box." },
+
                 { TooltipTitleKey(kManipulation), "Manipulation Mode" },
-                { TooltipDescriptionKey(kManipulation), "Select a network to manipulate its control points to change it's shape." },
+                { TooltipDescriptionKey(kManipulation), "Select a network to manipulate its control points to change its shape." },
+
                 { TooltipTitleKey("Redo"), "Redo" },
                 { TooltipDescriptionKey("Redo"), "Redoes a Move It Action that was undone." },
 
-                { TextLabel ("Filters"), "Filters" },
+                { TextLabel("Filters"), "Filters" },
                 { TooltipDescriptionKey("Filters"), "When opened, allows filtering based on different categories. Filtering doesn't apply when Filters Foldout is closed. Right click a category to enable it and disable the others." },
+
                 { TextLabel("Buildings"), "Buildings" },
                 { TooltipDescriptionKey("BuildingsFilter"), "Toggled on allows Building to be selected. Off to filter out Buildings." },
+
                 { TextLabel("Plants"), "Plants" },
                 { TooltipDescriptionKey("PlantsFilter"), "Toggled on allows Plants to be selected. Off to filter out Plants." },
+
                 { TextLabel("Decals"), "Decals" },
                 { TooltipDescriptionKey("DecalsFilter"), "Toggled on allows Decals to be selected. Off to filter out Decals." },
+
                 { TextLabel("Props"), "Props" },
                 { TooltipDescriptionKey("PropsFilter"), "Toggled on allows Props to be selected. Off to filter out Props." },
+
                 { TextLabel("Surfaces"), "Surfaces" },
                 { TooltipDescriptionKey("SurfacesFilter"), "Toggled on allows Surfaces to be selected. Off to filter out Surfaces." },
+
                 { TextLabel("Nodes"), "Nodes" },
                 { TooltipDescriptionKey("NodesFilter"), "Toggled on allows Nodes to be selected. Off to filter out Nodes." },
+
                 { TextLabel("Segments"), "Segments" },
                 { TooltipDescriptionKey("SegmentsFilter"), "Toggled on allows Segments to be selected. Off to filter out Segments." },
+
                 { TextLabel("NetLanes"), "NetLanes" },
                 { TooltipDescriptionKey("NetLanesFilter"), "Toggled on allows NetLanes to be selected. Off to filter out NetLanes." },
 
                 { TextLabel("Toolbox"), "Toolbox" },
                 { TooltipDescriptionKey("Toolbox"), "Additional tools to control the behavior of Move It Tool on the selected elements." },
+
                 { TextLabel(nameof(TerrainHeight)), "To Terrain Height" },
                 { TooltipDescriptionKey(nameof(TerrainHeight)), "Moves selected objects to the terrain height. Does not work with buildings or on-ground networks." },
+
                 { TextLabel(nameof(ObjectHeight)), "To Object Height" },
                 { TooltipDescriptionKey(nameof(ObjectHeight)), "Click on an object to move selected objects to that object's height" },
+
                 { TextLabel(nameof(RotateAtCenter)), "Rotate at Center" },
                 { TooltipDescriptionKey(nameof(RotateAtCenter)), "Click on an object to rotate selected objects about their centroid to face the same angle as that object." },
+
                 { TextLabel(nameof(RotateInPlace)), "Rotate in-Place" },
-                { TooltipDescriptionKey(nameof(RotateInPlace)) , "Click on an object to rotate selected objects in place to face the same angle as that object." },
+                { TooltipDescriptionKey(nameof(RotateInPlace)), "Click on an object to rotate selected objects in place to face the same angle as that object." },
 
                 { TextLabel("MConflictMessage"), "Do you want the '**M**' key to open Move It?\nIt will be removed from:" },
 
@@ -189,13 +203,15 @@ namespace MoveIt.Settings
 
                 { TooltipTitleKey("FollowTerrain"), "Follow Terrain" },
                 { TooltipDescriptionKey("FollowTerrain"), "When active, objects moved and copied will be placed relative to terrain height. When inactive, objects moved and copied will stay in a horizontal plane from their original location." },
+
                 { TooltipTitleKey("Copy"), "Copy" },
                 { TooltipDescriptionKey("Copy"), "Move It Tool will make copies of selected entities." },
+
                 { TooltipTitleKey("Delete"), "Delete" },
                 { TooltipDescriptionKey("Delete"), "Immediately deletes all selected entities." },
             };
 
-            #region Gooee Warning
+            // ---- Dynamic Gooee warning text (depends on folder detection) ----
             string gooeeLabel = m_Settings.GetOptionLabelLocaleID(nameof(Settings.GooeeWarning));
             string gooeeBtn = m_Settings.GetOptionLabelLocaleID(nameof(Settings.OpenLocalModsFolderBtn));
             string gooeeDesc = m_Settings.GetOptionDescLocaleID(nameof(Settings.OpenLocalModsFolderBtn));
@@ -206,7 +222,7 @@ namespace MoveIt.Settings
 
             if (FileUtils.GooeeBothFoldersExist)
             {
-                strings[gooeeLabel] += 
+                strings[gooeeLabel] +=
                     "Mods and ModsData folders which must be cleaned up.\n\n" +
                     "1. Close the game.\n 2. Remove Gooee if it exists.\n 3. Delete the Gooee folder in your local Mods folder.\n 4. Delete the Gooee folder in your local ModsData folder.";
                 strings[gooeeBtn] = "Open Local Mods and ModsData Folders";
@@ -231,7 +247,6 @@ namespace MoveIt.Settings
                     strings[gooeeDesc] = "Open the local ModsData folder - you should close the game before deleting the Gooee folder.";
                 }
             }
-            #endregion
 
             return strings;
         }
@@ -239,22 +254,11 @@ namespace MoveIt.Settings
         public void Unload()
         { }
 
-
-        /// <summary>
-        /// Gets a tooltip title locale key.
-        /// </summary>
-        /// <param name="key">Inside brackets part of key.</param>
-        /// <returns>Locale Key string for tooltip title.</returns>
         public static string TooltipTitleKey(string key)
         {
             return $"{Mod.MOD_UI}.TOOLTIP_TITLE[{key}]";
         }
 
-        /// <summary>
-        /// Gets a tooltip description locale key.
-        /// </summary>
-        /// <param name="key">Inside brackets part of key.</param>
-        /// <returns>Locale key string for tooltip description.</returns>
         public static string TooltipDescriptionKey(string key)
         {
             return $"{Mod.MOD_UI}.TOOLTIP_DESCRIPTION[{key}]";
@@ -264,7 +268,6 @@ namespace MoveIt.Settings
         {
             return $"{Mod.MOD_UI}.SECTION_TITLE[{key}]";
         }
-
 
         private string TextLabel(string key)
         {
