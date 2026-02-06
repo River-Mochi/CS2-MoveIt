@@ -18,7 +18,7 @@
 		<!-- Single source of truth for version:
 		     - Used by PDX publishing (SetupAttributes target)
 		     - Used by Mod.Version via Assembly.GetName().Version -->
-		<Version>0.6.1.0</Version>
+		<Version>0.6.1.1</Version>
 		<AssemblyVersion>$(Version)</AssemblyVersion>
 		<FileVersion>$(Version)</FileVersion>
 
@@ -30,16 +30,16 @@
 		<NpmCmd Condition="'$(NpmCmd)'==''">npm</NpmCmd>
 
 		<!-- UI build control:
-		     - Debug default: false (avoid slow/hanging builds during code iteration)
+		     - Debug default: true (set false to avoid slow/hanging builds during code iteration)
 		     - Release/Stable default: true (ensure publish builds include UI) -->
-		<RunMoveItUIBuild Condition="'$(RunMoveItUIBuild)'=='' AND '$(Configuration)'=='Debug'">false</RunMoveItUIBuild>
+		<RunMoveItUIBuild Condition="'$(RunMoveItUIBuild)'=='' AND '$(Configuration)'=='Debug'">true</RunMoveItUIBuild>
 		<RunMoveItUIBuild Condition="'$(RunMoveItUIBuild)'=='' AND '$(Configuration)'!='Debug'">true</RunMoveItUIBuild>
 
 		<!-- Move It UI project location (relative to this .csproj) -->
 		<MoveItUiDir>..\..\UI</MoveItUiDir>
 		<MoveItUiFullDir>$(MSBuildProjectDirectory)\$(MoveItUiDir)</MoveItUiFullDir>
 
-		<!-- Stamp files used for incremental npm -->
+		<!-- Stamp are marker files used for incremental npm -->
 		<MoveItNpmCiStamp>$(MoveItUiFullDir)\node_modules\.stamp</MoveItNpmCiStamp>
 		<MoveItNpmBuildStamp>$(MSBuildProjectDirectory)\bin\UI\.ui.stamp</MoveItNpmBuildStamp>
 

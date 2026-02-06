@@ -53,6 +53,8 @@ namespace MoveIt
 #endif
 #endif
 
+        private static bool s_BannerLogged; // one-time banner in QLog.
+
         // Settings instance used by Options UI and other systems.
         public static Settings.Settings Settings;
 
@@ -60,6 +62,13 @@ namespace MoveIt
         {
             // Debug logging is enabled for beta builds.
             if (IS_BETA) QLog.Init(true);
+
+   
+            if (!s_BannerLogged)
+            {
+                s_BannerLogged = true;  // One-time log banner
+                MoveItToolSystem.Log.Info($"[{MOD_UI}] OnLoad v{Version} (beta={IS_BETA})");
+            }
 
             // Create and register settings for Options UI + keybindings.
             Settings = new Settings.Settings(this);
