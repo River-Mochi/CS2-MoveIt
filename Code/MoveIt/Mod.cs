@@ -9,16 +9,16 @@
 // #define EXPORT_EN_US
 namespace MoveIt
 {
-    using Colossal;     // appears not used
+    using Colossal;          // EXPORT_EN_US
     using Colossal.Localization;
     using Game;
     using Game.Net;
     using Game.SceneFlow;
     using Game.Tools;
-    using MoveIt.Settings;  // appears not used
+    using MoveIt.Settings;  // EXPORT_EN_US
     using MoveIt.Systems;
-    using MoveIt.Tool;      // appears not used
-    using Newtonsoft.Json;  // appears not used
+    using MoveIt.Tool;
+    using Newtonsoft.Json;  // EXPORT_EN_US
     using QCommonLib;
     using System;
     using System.Collections.Generic;
