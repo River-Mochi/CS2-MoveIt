@@ -29,8 +29,17 @@
 		<!-- NPM runner -->
 		<NpmCmd Condition="'$(NpmCmd)'==''">npm</NpmCmd>
 
-		<!-- UI build control:
-		     - Debug default: true (recommend: set false to avoid slow/hanging builds during code testing)
+		<!-- npm ci control (separate from npm build) -->
+		<RunMoveItNpmCi Condition="'$(RunMoveItNpmCi)'==''">true</RunMoveItNpmCi>
+		
+		<!-- Force npm ci every build (default false = only run when package-lock.json changes) -->
+		<MoveItForceNpmCiAlways Condition="'$(MoveItForceNpmCiAlways)'==''">false</MoveItForceNpmCiAlways>
+
+
+		<!-- UI build control RunMoveItUIBuild is master on/off switch:
+			- true = UI targets are allowed to run | false = skip everything (no npm ci, no npm run build, no copy).
+			- Even when RMIUB = true, npm ci runs only if package-lock changed.
+		     - Debug default: true (during cs code iteration, set this to fals if you just want to build the .cs side.)
 		     - Release/Stable default: true (ensure publish builds include UI) -->
 		<RunMoveItUIBuild Condition="'$(RunMoveItUIBuild)'=='' AND '$(Configuration)'=='Debug'">true</RunMoveItUIBuild>
 		<RunMoveItUIBuild Condition="'$(RunMoveItUIBuild)'=='' AND ( '$(Configuration)'=='Release' OR '$(Configuration)'=='Stable' )">true</RunMoveItUIBuild>
@@ -81,17 +90,28 @@
 	</Target>
 
 	<!-- Optional: run npm ci when package-lock.json changes (recommended for reliability) -->
-	<Target Name="MoveItNpmInstallIfNeeded"
-	        Condition="'$(RunMoveItUIBuild)'=='true'
-	                   AND '$(RunMoveItNpmCi)'=='true'
-	                   AND Exists('$(MoveItUiFullDir)\package-lock.json')"
-	        Inputs="$(MoveItUiFullDir)\package-lock.json"
-	        Outputs="$(MoveItNpmCiStamp)">
+	<!-- npm ci router: chooses "always run" vs "incremental (only if lockfile changes)" -->
+	<Target Name="MoveItNpmInstall"
+			Condition="'$(RunMoveItUIBuild)'=='true'
+				AND '$(RunMoveItNpmCi)'=='true'
+				AND Exists('$(MoveItUiFullDir)\package.json')
+				AND Exists('$(MoveItUiFullDir)\package-lock.json')">
+		<CallTarget Targets="MoveItNpmInstallAlways"
+		            Condition="'$(MoveItForceNpmCiAlways)'=='true'" />
+		<CallTarget Targets="MoveItNpmInstallIfNeeded"
+		            Condition="'$(MoveItForceNpmCiAlways)'!='true'" />
+	</Target>
 
-		<Message Text="MOVE IT UI: npm ci (lockfile changed or first-time)..." Importance="high" />
+	<!-- npm ci Option: RUN ALWAYS (no stamp) -->
+	<Target Name="MoveItNpmInstallAlways"
+			Condition="'$(RunMoveItUIBuild)'=='true'
+				AND '$(RunMoveItNpmCi)'=='true'
+				AND '$(MoveItForceNpmCiAlways)'=='true'
+				AND Exists('$(MoveItUiFullDir)\package-lock.json')">
+		<Message Text="MOVE IT UI: npm ci (forced every build)..." Importance="high" />
 
-		<Exec Command="$(NpmCmd) ci --prefix $(MoveItUiDir)"
-		      WorkingDirectory="$(MSBuildProjectDirectory)"
+		<Exec Command="$(NpmCmd) ci"
+		      WorkingDirectory="$(MoveItUiFullDir)"
 		      IgnoreExitCode="true"
 		      Timeout="$(MoveItNpmCiTimeoutMs)">
 			<Output TaskParameter="ExitCode" PropertyName="MoveItNpmCiExit" />
@@ -99,7 +119,30 @@
 
 		<Error Condition="'$(Configuration)'!='Debug' AND '$(MoveItNpmCiExit)'!='0'"
 		       Text="MOVE IT UI: 'npm ci' failed (exit $(MoveItNpmCiExit)). Build aborted." />
+		<Warning Condition="'$(Configuration)'=='Debug' AND '$(MoveItNpmCiExit)'!='0'"
+		         Text="MOVE IT UI: 'npm ci' failed (exit $(MoveItNpmCiExit)). Continuing (Debug)." />
+	</Target>
+	
+	
+	<!-- npm ci Option: Only IF NEEDED (stamp / lockfile change) -->
+	<Target Name="MoveItNpmInstallIfNeeded"
+			Condition="'$(RunMoveItUIBuild)'=='true'
+				AND '$(RunMoveItNpmCi)'=='true'
+				AND '$(MoveItForceNpmCiAlways)'!='true'
+				AND Exists('$(MoveItUiFullDir)\package-lock.json')"
+			Inputs="$(MoveItUiFullDir)\package-lock.json"
+			Outputs="$(MoveItNpmCiStamp)">
+		<Message Text="MOVE IT UI: npm ci (lockfile changed or first-time)..." Importance="high" />
 
+		<Exec Command="$(NpmCmd) ci"
+		      WorkingDirectory="$(MoveItUiFullDir)"
+		      IgnoreExitCode="true"
+		      Timeout="$(MoveItNpmCiTimeoutMs)">
+			<Output TaskParameter="ExitCode" PropertyName="MoveItNpmCiExit" />
+		</Exec>
+
+		<Error Condition="'$(Configuration)'!='Debug' AND '$(MoveItNpmCiExit)'!='0'"
+		       Text="MOVE IT UI: 'npm ci' failed (exit $(MoveItNpmCiExit)). Build aborted." />
 		<Warning Condition="'$(Configuration)'=='Debug' AND '$(MoveItNpmCiExit)'!='0'"
 		         Text="MOVE IT UI: 'npm ci' failed (exit $(MoveItNpmCiExit)). Continuing (Debug)." />
 
@@ -108,6 +151,7 @@
 		                  Lines="ok"
 		                  Overwrite="true" />
 	</Target>
+
 
 	<!-- Proven working pattern: build UI AFTER DeployWIP, then copy into DeployDir -->
 	<Target Name="CopyFiles"
