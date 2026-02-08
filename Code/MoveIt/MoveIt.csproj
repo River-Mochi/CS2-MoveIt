@@ -26,48 +26,58 @@
 		<AssemblyName>MoveIt</AssemblyName>
 		<RootNamespace>MoveIt</RootNamespace>
 
-		<!-- NPM runner -->
-		<NpmCmd Condition="'$(NpmCmd)'==''">npm</NpmCmd>
+		<!-- ============================================================
+		     UI build controls (3 knobs)
+		     ============================================================
 
-		<!-- npm ci control (separate from npm build) -->
+		     1) RunMoveItUIBuild (master switch)
+		        - true  = run UI build + copy UI output into $(DeployDir)
+		        - false = skip ALL UI steps (no npm ci, no npm run build, no copy)
+
+		     2) RunMoveItNpmCi (enable/disable npm ci entirely)
+		        - true  = allow npm ci behavior below
+		        - false = never run npm ci from MSBuild (manual terminal only)
+
+		     3) MoveItForceNpmCiAlways (npm ci mode)
+		        - true  = run npm ci every build (no stamp)
+		        - false = run npm ci only when package-lock.json changes (stamp-marker)
+
+		     Recommended defaults:
+		       RunMoveItUIBuild=true
+		       RunMoveItNpmCi=true
+		       MoveItForceNpmCiAlways=false
+		-->
+
+		<!-- Master on/off for ALL UI steps (build + copy). -->
+		<RunMoveItUIBuild Condition="'$(RunMoveItUIBuild)'==''">true</RunMoveItUIBuild>
+
+		<!-- Enable/disable npm ci from MSBuild (separate from npm run build). -->
 		<RunMoveItNpmCi Condition="'$(RunMoveItNpmCi)'==''">true</RunMoveItNpmCi>
-		
-		<!-- Force npm ci every build (default false = only run when package-lock.json changes) -->
+
+		<!-- Force npm ci every build (default false = only when package-lock.json changes). -->
 		<MoveItForceNpmCiAlways Condition="'$(MoveItForceNpmCiAlways)'==''">false</MoveItForceNpmCiAlways>
 
-
-		<!-- UI build control RunMoveItUIBuild is master on/off switch:
-			- true = UI targets are allowed to run | false = skip everything (no npm ci, no npm run build, no copy).
-			- Even when RMIUB = true, npm ci runs only if package-lock changed.
-		     - Debug default: true (during cs code iteration, set this to fals if you just want to build the .cs side.)
-		     - Release/Stable default: true (ensure publish builds include UI) -->
-		<RunMoveItUIBuild Condition="'$(RunMoveItUIBuild)'=='' AND '$(Configuration)'=='Debug'">true</RunMoveItUIBuild>
-		<RunMoveItUIBuild Condition="'$(RunMoveItUIBuild)'=='' AND ( '$(Configuration)'=='Release' OR '$(Configuration)'=='Stable' )">true</RunMoveItUIBuild>
-
-		<!-- Move It UI project location (relative to this .csproj) -->
+		<!-- UI project location (relative to this .csproj). -->
 		<MoveItUiDir>..\..\UI</MoveItUiDir>
 		<MoveItUiFullDir>$(MSBuildProjectDirectory)\$(MoveItUiDir)</MoveItUiFullDir>
 
-		<!-- npm build will run every build when UI is enabled
-		     npm ci keeps a small stamp -->
-		<RunMoveItNpmCi Condition="'$(RunMoveItNpmCi)'==''">true</RunMoveItNpmCi>
+		<!-- Stamp file used only for the "npm ci only when package-lock.json changes" mode. -->
 		<MoveItNpmCiStamp>$(MoveItUiFullDir)\node_modules\.moveit-npmci.stamp</MoveItNpmCiStamp>
 
-
-		<!-- Optional timeouts (ms). Exec default is infinite; these prevent “looks stuck forever”. -->
+		<!-- Optional timeouts (ms). Exec default is infinite; these prevent "looks stuck forever". -->
 		<MoveItNpmCiTimeoutMs Condition="'$(MoveItNpmCiTimeoutMs)'==''">900000</MoveItNpmCiTimeoutMs>
 		<MoveItNpmBuildTimeoutMs Condition="'$(MoveItNpmBuildTimeoutMs)'==''">900000</MoveItNpmBuildTimeoutMs>
 	</PropertyGroup>
 
-	<!--Imports must be after PropertyGroup block-->
+	<!-- Imports must be after PropertyGroup block -->
 	<Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.props" />
 	<Import Project="..\..\..\QCommon2\Code\QCommon\QCommon\Shared\QCommonShared.projitems" Label="Shared" />
 	<Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.targets" />
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
 		<!-- RELEASE is custom define (not MSBuild).
-       Mod.cs uses it to format Mod.Version as a 4-part string.
-       Stable keeps the original 3-part version (ToString(3)). -->
+		     Mod.cs uses it to format Mod.Version as a 4-part string.
+		     Stable keeps the original 3-part version (ToString(3)). -->
 		<DefineConstants>$(DefineConstants);USE_BURST;RELEASE</DefineConstants>
 		<WarningLevel>4</WarningLevel>
 	</PropertyGroup>
@@ -82,111 +92,120 @@
 		<WarningLevel>4</WarningLevel>
 	</PropertyGroup>
 
-	<!-- Optional Debug helper: this just prints to output the Path of the toolchain-provided MSCORLIB if it exists. -->
-	<Target Name="ShowMscorlibPath"
-	        BeforeTargets="Build"
-	        Condition="'$(Configuration)'=='Debug'">
-		<Message Importance="High" Text="MSCORLIBPath=$(MSCORLIBPath)" />
-	</Target>
+	<!-- ============================================================
+	     npm ci (optional dependency install step)
+	     ============================================================
+	     What this does:
+	       - Runs "npm ci" in the UI folder, using package-lock.json.
+	       - This creates a clean, reproducible node_modules.
+	     When it runs:
+	       - Only if RunMoveItUIBuild=true AND RunMoveItNpmCi=true
+	       - And only if UI/package-lock.json exists.
+	     Modes:
+	       - MoveItForceNpmCiAlways=true  => run every build (no stamp)
+	       - MoveItForceNpmCiAlways=false => run only when package-lock.json changes (stamp)
+	-->
 
-	<!-- Optional: run npm ci when package-lock.json changes (recommended for reliability) -->
-	<!-- npm ci router: chooses "always run" vs "incremental (only if lockfile changes)" -->
+	<!-- Router target: picks the npm ci mode (always run vs lockfile-changed). -->
 	<Target Name="MoveItNpmInstall"
-			Condition="'$(RunMoveItUIBuild)'=='true'
-				AND '$(RunMoveItNpmCi)'=='true'
-				AND Exists('$(MoveItUiFullDir)\package.json')
-				AND Exists('$(MoveItUiFullDir)\package-lock.json')">
-		<CallTarget Targets="MoveItNpmInstallAlways"
-		            Condition="'$(MoveItForceNpmCiAlways)'=='true'" />
-		<CallTarget Targets="MoveItNpmInstallIfNeeded"
-		            Condition="'$(MoveItForceNpmCiAlways)'!='true'" />
+	        Condition="'$(RunMoveItUIBuild)'=='true' AND '$(RunMoveItNpmCi)'=='true' AND Exists('$(MoveItUiFullDir)\package.json') AND Exists('$(MoveItUiFullDir)\package-lock.json')">
+		<CallTarget Targets="MoveItNpmInstallAlways" Condition="'$(MoveItForceNpmCiAlways)'=='true'" />
+		<CallTarget Targets="MoveItNpmInstallIfNeeded" Condition="'$(MoveItForceNpmCiAlways)'!='true'" />
 	</Target>
 
-	<!-- npm ci Option: RUN ALWAYS (no stamp) -->
+	<!-- Mode A: npm ci every build (no stamp). -->
 	<Target Name="MoveItNpmInstallAlways"
-			Condition="'$(RunMoveItUIBuild)'=='true'
-				AND '$(RunMoveItNpmCi)'=='true'
-				AND '$(MoveItForceNpmCiAlways)'=='true'
-				AND Exists('$(MoveItUiFullDir)\package-lock.json')">
+	        Condition="'$(RunMoveItUIBuild)'=='true' AND '$(RunMoveItNpmCi)'=='true' AND '$(MoveItForceNpmCiAlways)'=='true' AND Exists('$(MoveItUiFullDir)\package-lock.json')">
 		<Message Text="MOVE IT UI: npm ci (forced every build)..." Importance="high" />
 
-		<Exec Command="$(NpmCmd) ci"
+		<Exec Command="npm ci"
 		      WorkingDirectory="$(MoveItUiFullDir)"
 		      IgnoreExitCode="true"
 		      Timeout="$(MoveItNpmCiTimeoutMs)">
 			<Output TaskParameter="ExitCode" PropertyName="MoveItNpmCiExit" />
 		</Exec>
 
+		<!-- Non-Debug configs: fail hard -->
 		<Error Condition="'$(Configuration)'!='Debug' AND '$(MoveItNpmCiExit)'!='0'"
 		       Text="MOVE IT UI: 'npm ci' failed (exit $(MoveItNpmCiExit)). Build aborted." />
+
+		<!-- Debug: warn -->
 		<Warning Condition="'$(Configuration)'=='Debug' AND '$(MoveItNpmCiExit)'!='0'"
 		         Text="MOVE IT UI: 'npm ci' failed (exit $(MoveItNpmCiExit)). Continuing (Debug)." />
 	</Target>
-	
-	
-	<!-- npm ci Option: Only IF NEEDED (stamp / lockfile change) -->
-	<Target Name="MoveItNpmInstallIfNeeded"
-			Condition="'$(RunMoveItUIBuild)'=='true'
-				AND '$(RunMoveItNpmCi)'=='true'
-				AND '$(MoveItForceNpmCiAlways)'!='true'
-				AND Exists('$(MoveItUiFullDir)\package-lock.json')"
-			Inputs="$(MoveItUiFullDir)\package-lock.json"
-			Outputs="$(MoveItNpmCiStamp)">
-		<Message Text="MOVE IT UI: npm ci (lockfile changed or first-time)..." Importance="high" />
 
-		<Exec Command="$(NpmCmd) ci"
+	<!-- Mode B (recommended): npm ci only when package-lock.json changes (stamp-based). -->
+	<Target Name="MoveItNpmInstallIfNeeded"
+	        Condition="'$(RunMoveItUIBuild)'=='true' AND '$(RunMoveItNpmCi)'=='true' AND '$(MoveItForceNpmCiAlways)'!='true' AND Exists('$(MoveItUiFullDir)\package-lock.json')"
+	        Inputs="$(MoveItUiFullDir)\package-lock.json"
+	        Outputs="$(MoveItNpmCiStamp)">
+		<Message Text="MOVE IT UI: npm ci (first-time or package-lock.json changed)..." Importance="high" />
+
+		<Exec Command="npm ci"
 		      WorkingDirectory="$(MoveItUiFullDir)"
 		      IgnoreExitCode="true"
 		      Timeout="$(MoveItNpmCiTimeoutMs)">
 			<Output TaskParameter="ExitCode" PropertyName="MoveItNpmCiExit" />
 		</Exec>
 
+		<!-- Non-Debug configs: fail hard -->
 		<Error Condition="'$(Configuration)'!='Debug' AND '$(MoveItNpmCiExit)'!='0'"
 		       Text="MOVE IT UI: 'npm ci' failed (exit $(MoveItNpmCiExit)). Build aborted." />
+
+		<!-- Debug: warn -->
 		<Warning Condition="'$(Configuration)'=='Debug' AND '$(MoveItNpmCiExit)'!='0'"
 		         Text="MOVE IT UI: 'npm ci' failed (exit $(MoveItNpmCiExit)). Continuing (Debug)." />
 
+		<!-- Stamp written only on success; used to skip npm ci until lockfile changes again. -->
 		<WriteLinesToFile Condition="'$(MoveItNpmCiExit)'=='0'"
 		                  File="$(MoveItNpmCiStamp)"
 		                  Lines="ok"
 		                  Overwrite="true" />
 	</Target>
 
-
-	<!-- Proven working pattern: build UI AFTER DeployWIP, then copy into DeployDir -->
+	<!-- ============================================================
+	     UI build + copy (always run npm run build when UI enabled)
+	     ============================================================
+	     Why AfterTargets=DeployWIP:
+	       - Mod.targets DeployWIP deletes and recreates $(DeployDir).
+	       - Building UI earlier can leave UI files missing after DeployWIP runs.
+	     Order:
+	       DeployWIP (toolchain) -> optional npm ci -> npm run build -> copy bin\UI -> $(DeployDir)
+	-->
 	<Target Name="CopyFiles"
 	        AfterTargets="DeployWIP"
-	        DependsOnTargets="MoveItNpmInstallIfNeeded"
-	        Condition="'$(RunMoveItUIBuild)'=='true'
-	                   AND Exists('$(MoveItUiFullDir)\package.json')">
+	        DependsOnTargets="MoveItNpmInstall"
+	        Condition="'$(RunMoveItUIBuild)'=='true' AND Exists('$(MoveItUiFullDir)\package.json')">
 
 		<Message Text="MOVE IT UI: npm run build (after DeployWIP)..." Importance="high" />
 
-		<Exec Command="$(NpmCmd) run build --prefix $(MoveItUiDir)"
+		<!-- Matches original: run the UI build using prefix flag to the UI folder. -->
+		<Exec Command="npm run build --prefix $(MoveItUiDir)"
 		      WorkingDirectory="$(MSBuildProjectDirectory)"
 		      IgnoreExitCode="true"
 		      Timeout="$(MoveItNpmBuildTimeoutMs)">
 			<Output TaskParameter="ExitCode" PropertyName="MoveItNpmBuildExit" />
 		</Exec>
 
+		<!-- Non-Debug configs: fail hard -->
 		<Error Condition="'$(Configuration)'!='Debug' AND '$(MoveItNpmBuildExit)'!='0'"
 		       Text="MOVE IT UI: 'npm run build' failed (exit $(MoveItNpmBuildExit)). Build aborted." />
 
+		<!-- Debug: warn -->
 		<Warning Condition="'$(Configuration)'=='Debug' AND '$(MoveItNpmBuildExit)'!='0'"
 		         Text="MOVE IT UI: 'npm run build' failed (exit $(MoveItNpmBuildExit)). Continuing (Debug)." />
 
-		<!-- Enumerate AFTER build so newly generated files are included -->
+		<!-- Enumerate AFTER build so newly generated files (including images/) are included. -->
 		<ItemGroup>
 			<UIFiles Include="bin\UI\**\*.*" />
 		</ItemGroup>
 
+		<!-- Copy the built UI bundle into the deployed mod folder. -->
 		<Copy Condition="Exists('bin\UI')"
 		      SourceFiles="@(UIFiles)"
 		      DestinationFiles="@(UIFiles->'$(DeployDir)\%(RecursiveDir)%(Filename)%(Extension)')"
 		      SkipUnchangedFiles="true" />
 	</Target>
-
-
 
 	<Target Name="SetupAttributes" BeforeTargets="BeforeBuild" Condition="'$(Configuration)' != 'Debug'">
 		<XmlPoke XmlInputPath="$(PublishConfigurationPath)" Value="$([System.IO.File]::ReadAllText(Properties/$(Configuration)/LongDescription.md))" Query="//LongDescription" />
@@ -311,7 +330,7 @@
 			<Private>False</Private>
 		</Reference>
 
-		<!-- Keep: removing this causes CS0518 / missing predefined types in this project -->
+		<!-- Keep: removing this causes CS0518 / missing predefined types -->
 		<Reference Include="mscorlib">
 			<Private>False</Private>
 			<HintPath>$(ManagedPath)\mscorlib.dll</HintPath>
